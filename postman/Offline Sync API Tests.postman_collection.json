@@ -1,0 +1,261 @@
+{
+  "info": {
+    "_postman_id": "0b18f8a8-3f6c-49d7-aace-ea8b91e90a7d",
+    "name": "Offline Sync API Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "13852941",
+    "_collection_link": "https://go.postman.co/collection/13852941-0b18f8a8-3f6c-49d7-aace-ea8b91e90a7d?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "01 - Create Ankit Survey",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code should be 201 Created\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Response status should be success\", function () {\r\n    pm.expect(response.status).to.eql(\"success\");\r\n});\r\n\r\npm.test(\"sync_id should match request\", function () {\r\n    pm.expect(response.sync_id).to.eql(pm.environment.get(\"ankitSyncId\"));\r\n});\r\n\r\npm.test(\"local_id should be School_1\", function () {\r\n    pm.expect(response.local_id).to.eql(\"School_1\");\r\n});\r\n\r\npm.test(\"device_id should be Ankit's device\", function () {\r\n    pm.expect(response.device_id).to.eql(\"device-ankit-001\");\r\n});\r\n\r\npm.test(\"server_id should be generated\", function () {\r\n    pm.expect(response.server_id).to.be.a(\"string\").and.not.empty;\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{ankitSyncId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"sync_id\": \"{{ankitSyncId}}\",\r\n  \"device_id\": \"device-ankit-001\",\r\n  \"worker_id\": \"worker-ankit\",\r\n  \"local_id\": \"School_1\",\r\n  \"survey_data\": {\r\n    \"school_name\": \"Govt Primary School\",\r\n    \"village\": \"Village A\",\r\n    \"students_count\": 120\r\n  },\r\n  \"updated_at\": \"2026-09-21T10:00:00Z\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/sync-survey",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "sync-survey"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Verify Survey Records",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const response = pm.response.json();\r\n\r\npm.test(\"Status code should be 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response status should be success\", function () {\r\n    pm.expect(response.status).to.eql(\"success\");\r\n});\r\n\r\npm.test(\"Two unique survey records should exist\", function () {\r\n    pm.expect(response.count).to.eql(2);\r\n});\r\n\r\npm.test(\"Ankit survey should exist\", function () {\r\n    const ankit = response.surveys.find(\r\n        survey => survey.device_id === \"device-ankit-001\"\r\n    );\r\n\r\n    pm.expect(ankit).to.exist;\r\n    pm.expect(ankit.local_id).to.eql(\"School_1\");\r\n});\r\n\r\npm.test(\"Pooja survey should exist\", function () {\r\n    const pooja = response.surveys.find(\r\n        survey => survey.device_id === \"device-pooja-001\"\r\n    );\r\n\r\n    pm.expect(pooja).to.exist;\r\n    pm.expect(pooja.local_id).to.eql(\"School_1\");\r\n});\r\n\r\npm.test(\"Ankit and Pooja should have separate server records\", function () {\r\n    const ankit = response.surveys.find(\r\n        survey => survey.device_id === \"device-ankit-001\"\r\n    );\r\n\r\n    const pooja = response.surveys.find(\r\n        survey => survey.device_id === \"device-pooja-001\"\r\n    );\r\n\r\n    pm.expect(ankit.server_id).to.not.eql(pooja.server_id);\r\n});\r\n\r\npm.test(\"Ankit data should not be overwritten\", function () {\r\n    const ankit = response.surveys.find(\r\n        survey => survey.device_id === \"device-ankit-001\"\r\n    );\r\n\r\n    pm.expect(ankit.survey_data.students_count).to.eql(120);\r\n});\r\n\r\npm.test(\"Pooja data should not overwrite Ankit data\", function () {\r\n    const pooja = response.surveys.find(\r\n        survey => survey.device_id === \"device-pooja-001\"\r\n    );\r\n\r\n    pm.expect(pooja.survey_data.students_count).to.eql(125);\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/sync-survey",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "sync-survey"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "02 - Create Pooja Survey - Same Local ID",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{poojaSyncId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"sync_id\": \"{{poojaSyncId}}\",\r\n  \"device_id\": \"device-pooja-001\",\r\n  \"worker_id\": \"worker-pooja\",\r\n  \"local_id\": \"School_1\",\r\n  \"survey_data\": {\r\n    \"school_name\": \"Govt Primary School\",\r\n    \"village\": \"Village A\",\r\n    \"students_count\": 125\r\n  },\r\n  \"updated_at\": \"2026-09-21T11:00:00Z\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/sync-survey",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "sync-survey"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "04 - Invalid Request - Missing Device ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code should be 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Response status should be error\", function () {\r\n    pm.expect(response.status).to.eql(\"error\");\r\n});\r\n\r\npm.test(\"Error should mention device_id\", function () {\r\n    pm.expect(response.message).to.include(\"device_id\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"sync_id\": \"sync-invalid-001\",\r\n  \"worker_id\": \"worker-ankit\",\r\n  \"local_id\": \"School_1\",\r\n  \"survey_data\": {\r\n    \"school_name\": \"Govt Primary School\",\r\n    \"village\": \"Village A\",\r\n    \"students_count\": 120\r\n  }\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/sync-survey",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "sync-survey"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "05 - Invalid Request - Missing Local ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code should be 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Response status should be error\", function () {\r\n    pm.expect(response.status).to.eql(\"error\");\r\n});\r\n\r\npm.test(\"Error should mention local_id\", function () {\r\n    pm.expect(response.message).to.include(\"local_id\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"sync_id\": \"sync-invalid-002\",\r\n  \"device_id\": \"device-ankit-001\",\r\n  \"worker_id\": \"worker-ankit\",\r\n  \"survey_data\": {\r\n    \"school_name\": \"Govt Primary School\",\r\n    \"village\": \"Village A\",\r\n    \"students_count\": 120\r\n  }\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/sync-survey",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "sync-survey"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "03 - Retry Ankit Survey - Idempotency",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Retry should return a successful response\", function () {\r\n    pm.expect([200, 201]).to.include(pm.response.code);\r\n});\r\n\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Response status should be success\", function () {\r\n    pm.expect(response.status).to.eql(\"success\");\r\n});\r\n\r\npm.test(\"sync_id should remain the same\", function () {\r\n    pm.expect(response.sync_id).to.eql(\r\n        pm.environment.get(\"ankitSyncId\")\r\n    );\r\n});\r\n\r\npm.test(\"local_id should remain School_1\", function () {\r\n    pm.expect(response.local_id).to.eql(\"School_1\");\r\n});\r\n\r\npm.test(\"device_id should remain Ankit's device\", function () {\r\n    pm.expect(response.device_id).to.eql(\"device-ankit-001\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{ankitSyncId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"sync_id\": \"{{ankitSyncId}}\",\r\n  \"device_id\": \"device-ankit-001\",\r\n  \"worker_id\": \"worker-ankit\",\r\n  \"local_id\": \"School_1\",\r\n  \"survey_data\": {\r\n    \"school_name\": \"Govt Primary School\",\r\n    \"village\": \"Village A\",\r\n    \"students_count\": 120\r\n  },\r\n  \"updated_at\": \"2026-09-21T10:00:00Z\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/sync-survey",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "sync-survey"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
