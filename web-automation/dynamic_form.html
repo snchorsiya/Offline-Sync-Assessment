@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Interests & Hobbies</title>
+</head>
+
+<body>
+
+<h1>Student Interests & Hobbies</h1>
+
+<label for="hobby-question">
+    Do you have a hobby?
+</label>
+
+<select id="hobby-question">
+    <option value="">Select</option>
+    <option value="Yes">Yes</option>
+    <option value="No">No</option>
+</select>
+
+<br><br>
+
+<div id="hobby-field" style="display:none;">
+
+    <label for="hobby-text">
+        What is your hobby? (If Yes)
+    </label>
+
+    <input
+        type="text"
+        id="hobby-text"
+        name="hobby"
+    >
+
+</div>
+
+<script>
+
+const hobbyQuestion =
+    document.getElementById("hobby-question");
+
+const hobbyField =
+    document.getElementById("hobby-field");
+
+hobbyQuestion.addEventListener("change", function () {
+
+    if (this.value === "Yes") {
+        hobbyField.style.display = "block";
+    } else {
+        hobbyField.style.display = "none";
+    }
+
+});
+
+</script>
+
+</body>
+</html>
